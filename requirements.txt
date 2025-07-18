@@ -1,0 +1,16 @@
+langchain
+langgraph
+langchain-google-genai
+mcp
+langchain-core
+streamlit
+
+polars
+numpy
+scikit-learn
+joblib
+matplotlib
+pillow
+
+dotenv
+nest_asyncio
