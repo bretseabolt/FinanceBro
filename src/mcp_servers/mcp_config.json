@@ -3,7 +3,7 @@
       "data_alchemist": {
         "command": "python",
         "args": [
-          "/Users/brets/EDU/FinanceProject/src/mcp_servers/finance_bro.py"
+          "./src/mcp_servers/finance_bro.py"
         ],
         "transport": "stdio"
       }
