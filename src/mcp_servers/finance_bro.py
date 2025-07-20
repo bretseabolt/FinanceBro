@@ -92,11 +92,11 @@ class FinanceBro:
             if file_path.lower().endswith('.csv'):
                 self.data = pl.read_csv(full_path, infer_schema_length=10000)
             elif file_path.lower().endswith('.xlsx'):
-                self.data = pl.read_excel(full_path, sheet_id=0)
+
+                self.data = pl.read_excel(full_path, sheet_id=None)
             else:
                 return f"Error: Unsupported file format for {file_path}. Only .csv and .xlsx are supported."
 
-            # New: Assume uploaded file is transactions by default
             self.transactions = self.data.clone()
 
             self._save_data()
