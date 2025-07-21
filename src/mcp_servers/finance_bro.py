@@ -595,27 +595,38 @@ class FinanceBro:
         except Exception as e:
             return f"Error dropping rows with null values: {e}"
 
-        async def categorize_spending(self, categories: List[str] = None) -> str:
-            if self.transactions is None:
-                if not self._load_data_from_session():
-                    return "Error: No transactions loaded. Please load data first."
-            try:
-                possible_desc_cols = [col for col in self.transactions.columns if col.lower() == 'description']
-                if not possible_desc_cols:
-                    return "Error: No 'description' column found (case-insensitive search). Please ensure your data has a 'Description' or 'description' column."
-    
-                desc_col = possible_desc_cols[0]
-                if desc_col != 'description':
-                    self.transactions = self.transactions.rename({desc_col: 'description'})
-    
-    
-                self.transactions = self.transactions.with_columns(
-                    pl.col("description").str.extract(r'(\w+)').alias("category")
-                )
-                self._save_data()
-                return "Spending categorized successfully."
-            except Exception as e:
-                return f"Error categorizing spending: {e}"
+            async def categorize_spending(self, desc_col: str = "description", category_col_name: str = "category",
+                                  categories: List[str] = None) -> str:
+        """
+        Categorizes spending in the transactions DataFrame by extracting information from a specified description column
+        and creating a new column with the specified name.
+
+        Args:
+            desc_col: The name of the column containing transaction descriptions (defaults to "description").
+            category_col_name: The name of the new column to store categories (defaults to "category").
+            categories: Optional list of categories for more advanced mapping (currently unused in basic extraction).
+
+        Returns:
+            A string message indicating success or error.
+        """
+        if self.transactions is None:
+            if not self._load_data_from_session():
+                return "Error: No transactions loaded. Please load data first."
+        try:
+            possible_desc_cols = [col for col in self.transactions.columns if col.lower() == desc_col.lower()]
+            if not possible_desc_cols:
+                return f"Error: No column matching '{desc_col}' (case-insensitive) found for descriptions."
+
+            actual_desc_col = possible_desc_cols[0]
+
+
+            self.transactions = self.transactions.with_columns(
+                pl.col(actual_desc_col).str.extract(r'(\w+)').alias(category_col_name)
+            )
+            self._save_data()
+            return f"Spending categorized successfully into column '{category_col_name}' using descriptions from '{actual_desc_col}'."
+        except Exception as e:
+            return f"Error categorizing spending: {e}"
 
     async def suggest_savings(self, income_col: str, expense_col: str, goal: float) -> str:
         if self.transactions is None:
@@ -634,14 +645,36 @@ class FinanceBro:
     async def discover_investments(self, query: str = "beginner index funds") -> str:
         return f"Query noted: {query}. Use web_search or browse_page for details. Example: Low-risk ETFs like Vanguard S&P 500. Disclaimer: Not financial advice."
 
-    async def plot_spending_pie(self, category_col: str) -> str:
+        async def plot_spending_pie(self, category_col: str, amount_col: str = "amount") -> str:
+        """
+        Generates a pie chart to visualize spending distribution by category using a specified amount column.
+
+        Args:
+            category_col: The name of the column containing categories.
+            amount_col: The name of the column containing spending amounts (defaults to "amount").
+
+        Returns:
+            A string message indicating success or error, including the path to the saved plot if successful.
+        """
         if self.transactions is None:
             if not self._load_data_from_session():
                 return "Error: No transactions loaded. Please load data first."
         try:
-            sizes = self.transactions.group_by(category_col).agg(pl.col("amount").sum())
+            possible_cat_cols = [col for col in self.transactions.columns if col.lower() == category_col.lower()]
+            if not possible_cat_cols:
+                return f"Error: No column matching '{category_col}' (case-insensitive) found after categorization."
+
+            actual_cat_col = possible_cat_cols[0]
+
+            possible_amt_cols = [col for col in self.transactions.columns if col.lower() == amount_col.lower()]
+            if not possible_amt_cols:
+                return f"Error: No column matching '{amount_col}' (case-insensitive) found for amounts."
+
+            actual_amt_col = possible_amt_cols[0]
+
+            sizes = self.transactions.group_by(actual_cat_col).agg(pl.col(actual_amt_col).sum())
             plt.figure()
-            plt.pie(sizes["amount"], labels=sizes[category_col])
+            plt.pie(sizes[actual_amt_col], labels=sizes[actual_cat_col])
             plt.title("Spending by Category")
             plot_path = os.path.join(self.working_dir, "spending_pie.png")
             plt.savefig(plot_path)
@@ -649,7 +682,6 @@ class FinanceBro:
             return f"Spending pie chart generated and saved at {plot_path}."
         except Exception as e:
             return f"Error generating pie chart: {e}"
-
 
 session = FinanceBro()
 
@@ -823,8 +855,18 @@ async def wizard_discover_investments(query: str) -> str:
 
 
 @mcp.tool()
-async def wizard_plot_spending_pie(category_col: str) -> str:
-    return await session.plot_spending_pie(category_col)
+async def wizard_plot_spending_pie(category_col: str, amount_col: str = "amount") -> str:
+    """
+    Tool to generate a pie chart for spending by category.
+
+    Args:
+        category_col: The name of the category column.
+        amount_col: The name of the amount/spending column (defaults to "amount").
+
+    Returns:
+        Result message from pie chart generation.
+    """
+    return await session.plot_spending_pie(category_col, amount_col)
 
 
 if __name__ == "__main__":
