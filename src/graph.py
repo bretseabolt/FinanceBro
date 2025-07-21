@@ -38,7 +38,8 @@ def build_agent_graph(tools: List[BaseTool] = []):
     </financial-tasks>
 
     <user-interaction>
-    Start by asking for financial data upload. Summarize insights and suggest actions (e.g., "Your top spending category is food; aim to save 10% there.").
+    Start by asking for financial data upload. When the user first uploads a file, inspect the data with the first 5 rows.
+    Summarize insights and suggest actions (e.g., "Your top spending category is food; aim to save 10% there.").
     </user-interaction>
 
     <tools>
