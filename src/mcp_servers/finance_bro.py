@@ -595,7 +595,7 @@ class FinanceBro:
         except Exception as e:
             return f"Error dropping rows with null values: {e}"
 
-            async def categorize_spending(self, desc_col: str = "description", category_col_name: str = "category",
+    async def categorize_spending(self, desc_col: str = "description", category_col_name: str = "category",
                                   categories: List[str] = None) -> str:
         """
         Categorizes spending in the transactions DataFrame by extracting information from a specified description column
@@ -645,7 +645,7 @@ class FinanceBro:
     async def discover_investments(self, query: str = "beginner index funds") -> str:
         return f"Query noted: {query}. Use web_search or browse_page for details. Example: Low-risk ETFs like Vanguard S&P 500. Disclaimer: Not financial advice."
 
-        async def plot_spending_pie(self, category_col: str, amount_col: str = "amount") -> str:
+    async def plot_spending_pie(self, category_col: str, amount_col: str = "amount") -> str:
         """
         Generates a pie chart to visualize spending distribution by category using a specified amount column.
 
