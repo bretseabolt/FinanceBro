@@ -595,18 +595,27 @@ class FinanceBro:
         except Exception as e:
             return f"Error dropping rows with null values: {e}"
 
-    async def categorize_spending(self, categories: List[str] = None) -> str:
-        if self.transactions is None:
-            if not self._load_data_from_session():
-                return "Error: No transactions loaded. Please load data first."
-        try:
-            self.transactions = self.transactions.with_columns(
-                pl.col("description").str.extract(r'(\w+)').alias("category")
-            )
-            self._save_data()
-            return "Spending categorized successfully."
-        except Exception as e:
-            return f"Error categorizing spending: {e}"
+        async def categorize_spending(self, categories: List[str] = None) -> str:
+            if self.transactions is None:
+                if not self._load_data_from_session():
+                    return "Error: No transactions loaded. Please load data first."
+            try:
+                possible_desc_cols = [col for col in self.transactions.columns if col.lower() == 'description']
+                if not possible_desc_cols:
+                    return "Error: No 'description' column found (case-insensitive search). Please ensure your data has a 'Description' or 'description' column."
+    
+                desc_col = possible_desc_cols[0]
+                if desc_col != 'description':
+                    self.transactions = self.transactions.rename({desc_col: 'description'})
+    
+    
+                self.transactions = self.transactions.with_columns(
+                    pl.col("description").str.extract(r'(\w+)').alias("category")
+                )
+                self._save_data()
+                return "Spending categorized successfully."
+            except Exception as e:
+                return f"Error categorizing spending: {e}"
 
     async def suggest_savings(self, income_col: str, expense_col: str, goal: float) -> str:
         if self.transactions is None:
